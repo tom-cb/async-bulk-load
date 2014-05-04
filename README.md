@@ -41,3 +41,7 @@ A quick overview of the various classes is included here:
 ## MyReversingListener.java
 * Extends MyGetListener, with an over-riding implementation of doPostProcess.
 * Post processing takes the retrieved value, and issues a set back to the db, creating a MyListener as previously to check results and issue retries.
+
+## OpTracker.java and OpStatus.java
+* Used to log info about how many operations have been scheduled for each key, how many retries were issued, and whether each operation has completed successfully.
+* All setup already, to view the output just comment out the setLatch.await() and swap for the setLatch.await(5, TimeUnit) line, then uncomment the opTracker.print() line 
