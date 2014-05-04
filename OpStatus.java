@@ -5,6 +5,7 @@ public class OpStatus {
   //public as im too lazy to write getters and setters
   public int scheduled = 0;
   public int rescheduled = 0;
+  public int retried = 0;
   public int completed = 0;
   public int onCompleteCalled = 0;
 
@@ -14,6 +15,10 @@ public class OpStatus {
 
   public void setRescheduled() {
     rescheduled++;
+  }
+
+  public void setRetried() {
+    retried++;
   }
 
   public void setCompleted() {

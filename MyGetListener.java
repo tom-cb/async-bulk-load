@@ -47,10 +47,10 @@ import java.util.concurrent.TimeUnit;
       try {
         if (future.getStatus().isSuccess()) {
           try {
-      	    latch.countDown();
             opTracker.setCompleted(key);
+      	    latch.countDown();
           }
-          catch (Exception e) { System.out.println("couldnt countdown latch: " + e.getMessage()); throw e; }
+          catch (Exception e) { System.out.println("couldnt countdown latch: " + e.getMessage()); System.exit(1); }
 
           // do any additional work
           doPostProcess(future);
@@ -68,11 +68,13 @@ import java.util.concurrent.TimeUnit;
 
             backoffexp++;
             
-            if (sch == null) { System.out.println("no scheduler object!"); System.exit(0); }
+            if (sch == null) { System.out.println("no scheduler object!"); System.exit(1); }
+
+            opTracker.setRescheduled(key);
 
             ScheduledFuture scheduledFuture =
-              sch.schedule(new MyGetCallable(this, opTracker), (long)backoffMillis, TimeUnit.MILLISECONDS);
-	      } 
+              sch.schedule(getCallableForRetry(), (long)backoffMillis, TimeUnit.MILLISECONDS);
+	  } 
           catch (Exception e) { 
             System.out.println("borked during back off");
             System.exit(1);
@@ -84,5 +86,9 @@ import java.util.concurrent.TimeUnit;
          System.exit(1);
        }
       }//doGetWithBackOff
+
+      public Callable getCallableForRetry() {
+        return new MyGetCallable(this, opTracker);  
+      }
 
     } //MyGetListener

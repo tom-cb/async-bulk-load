@@ -27,7 +27,7 @@ class MyCallable implements Callable {
     try {
       // Perform the async call that forms the retry
       OperationFuture<Boolean> next_future = listener.client.set(listener.key, listener.value);
-      opTracker.setRescheduled(listener.key);
+      opTracker.setRetried(listener.key);
       next_future.addListener(new MyListener(listener.client, listener.latch, listener.backoffexp,
           listener.value, listener.key, listener.sch, opTracker));
     }

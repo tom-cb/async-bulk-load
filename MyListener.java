@@ -40,11 +40,11 @@ import java.util.concurrent.TimeUnit;
       try {
         if (future.getStatus().isSuccess()) {
           try {
-            // Successfully completed this operation, decrement the latch
-      	    latch.countDown();
-
             //Log this op as completed
             opTracker.setCompleted(key);
+
+            // Successfully completed this operation, decrement the latch
+      	    latch.countDown();
           }
           catch (Exception e) { 
             System.out.println("couldnt countdown latch: " + e.getMessage());
@@ -68,6 +68,8 @@ import java.util.concurrent.TimeUnit;
            
             //System.out.println("backing off for: " + backoffexp + " on key: " + future.getKey()); 
             if (sch == null) { System.out.println("no scheduler object!"); System.exit(1); }
+
+            opTracker.setRescheduled(key);
 
             ScheduledFuture scheduledFuture =
               sch.schedule(new MyCallable(this, opTracker), (long)backoffMillis, TimeUnit.MILLISECONDS);

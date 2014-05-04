@@ -42,7 +42,6 @@ import java.util.concurrent.TimeUnit;
         }
 
         try {
-          System.out.println("queueing set for: " + key);
     	  OperationFuture<Boolean> set_future = client.set(key, value);
           opTracker.setScheduled(key);
     	  set_future.addListener(new MyListener(client, setLatch, 0, value, key, sch, opTracker));
@@ -53,6 +52,11 @@ import java.util.concurrent.TimeUnit;
           throw e;
         }
       } 
+
+      public Callable getCallableForRetry() {
+        return new MyReversingCallable(this, opTracker);  
+      }
+
 
 
     } //MyReversingListener

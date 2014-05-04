@@ -31,7 +31,7 @@ public class MainDriver {
 
     // (Subset) of nodes in the cluster to establish a connection
     List<URI> hosts = Arrays.asList(
-      new URI("http://127.0.0.1:8091/pools")
+      new URI("http://188.226.229.190:8091/pools")
     );
  
     // Name of the Bucket to connect to
@@ -44,7 +44,7 @@ public class MainDriver {
 
     // Ovveride default values on CouchbaseConnectionFactoryBuilder
     // For example - wait up to 10 seconds for an operation to succeed
-    cfb.setOpTimeout(2);
+    cfb.setOpTimeout(1000);
     cfb.setOpQueueMaxBlockTime(30000);
 
     CouchbaseConnectionFactory cf = cfb.buildCouchbaseConnection(hosts, "default", "");
@@ -54,31 +54,28 @@ public class MainDriver {
     // ******* Create some data to use as our value ********
     // *****************************************************
 
-    Random rgen = new Random();
-    String value = "0123456789";
-
-
-    // This commented out section is just used for creating
-    // value of larger size to use for ops in testing
-
-    /*
-	String value = "{ \"Value\": \"value-";
-	for (int i = 0; i < 250; i++) {
-		value += rgen.nextInt();
-	}
-	value += "\"}";
-    */
+    // Create a string to use as our 'value' for storing
+    // Loop adding multiples of that to give larger value for testing
+    // Creating 2500 char string here by default
+    String value = "";
+    for (int i = 0; i < 250; i++) {
+      value += "0123456789";
+    }
 
 
     System.out.println("Length of value string: " + value.getBytes("UTF-8").length);
 
     // Set the number of key/value pairs to create
-    int iterations = 10000; 
+    int iterations = 10000000; 
 
     OpTracker opTracker = new OpTracker();
 
+
     // ******* Create and issue async sets initial data ****
     // *****************************************************
+
+    long phaseOneStartTime = System.currentTimeMillis();
+
     for (int s=0; s<10; s++)
     {
 	  final CountDownLatch latch = new CountDownLatch(iterations/10);
@@ -96,17 +93,21 @@ public class MainDriver {
           }
 	  }
 	  latch.await();
+          //We've finished that batch, so hint to system now is good time for gc before next batch
+          System.gc();
       //System.out.println("final latch value: " + latch.getCount());
     }
 
-    System.out.println("completed *SET* operations, outputting result anaylsis: ");
-    System.out.println("Op tracker results: " );
+    long phaseOneEndTime = System.currentTimeMillis();
+
+    System.out.println("completed " + iterations + " *SET* opeerations in " + ((phaseOneEndTime - phaseOneStartTime)/1000) + " seconds" );
     //opTracker.printTracker();
 
 
     // *** Retrieve each document, reverse it, and store back ***
     // *****************************************************
 
+    long phaseTwoStartTime = System.currentTimeMillis();
     for (int s=0; s<10; s++)
     {
         //doubling iterations to allow for get and set
@@ -125,27 +126,20 @@ public class MainDriver {
             throw e;
           }
 	  }
-	  latch.await();
-      System.out.println("completed all gets");
-      System.out.println("set latch: " + setLatch.getCount());
-      /*
-      Thread.sleep(5000);
-      System.out.println("set latch after sleep: " + setLatch.getCount());
-      Thread.sleep(5000);
-      System.out.println("set latch after sleep: " + setLatch.getCount());
-      */
-      
-      //Wait for a max of 5 seconds, then carry on to output data for debug
-      //setLatch.await(5, TimeUnit.SECONDS);
+      latch.await();
       setLatch.await();
-      System.out.println("final latch value: " + latch.getCount());
+
+      //We've finished that batch, so hint to system now is good time for gc before next batch
+      System.gc();
     }
 
-    System.out.println("completed *GET/MODIFY/SET* operations, outputting result anaylsis: ");
-    System.out.println("Op tracker results: " );
-    //opTracker.printTracker();
+    long phaseTwoEndTime = System.currentTimeMillis();
 
-    System.out.println("key0: " + client.get("key-0-0")); 
+    System.out.println("completed " + iterations + " *GET + SET*  operations in " + ((phaseTwoEndTime - phaseTwoStartTime)/1000) + " seconds" );
+
+
+    //System.out.println("Op tracker results: " );
+    //opTracker.printTracker();
 
     // Shutting down properly
     client.shutdown();

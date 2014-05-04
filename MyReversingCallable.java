@@ -14,11 +14,11 @@ import java.util.concurrent.TimeUnit;
 
 
 
-class MyGetCallable implements Callable {
-  MyGetListener listener;
+class MyReversingCallable implements Callable {
+  MyReversingListener listener;
   OpTracker opTracker;
 
-  MyGetCallable(MyGetListener l, OpTracker ot) {
+  MyReversingCallable(MyReversingListener l, OpTracker ot) {
     listener = l; 
     opTracker = ot;
   }
@@ -28,8 +28,8 @@ class MyGetCallable implements Callable {
       // Perform the async call that forms the retry
       GetFuture<java.lang.Object> next_future = listener.client.asyncGet(listener.key);
       opTracker.setRetried(listener.key);
-      next_future.addListener(new MyGetListener(listener.client, listener.latch, listener.backoffexp,
-         listener.value, listener.key, listener.sch, opTracker));
+      next_future.addListener(new MyReversingListener(listener.client, listener.latch, listener.backoffexp,
+         listener.value, listener.key, listener.sch, listener.setLatch, listener.opTracker));
     }
    	catch (Exception e) { 
       System.out.println("caught exception: " + e.getMessage()); 
