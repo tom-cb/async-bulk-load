@@ -1,0 +1,88 @@
+import com.couchbase.client.CouchbaseClient;
+import java.util.concurrent.CountDownLatch;
+import net.spy.memcached.internal.OperationFuture;
+import net.spy.memcached.internal.OperationCompletionListener;
+
+
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+
+    class MyListener implements OperationCompletionListener {
+      ScheduledExecutorService sch;
+	  Object value;
+      String key;
+      CountDownLatch latch;
+      CouchbaseClient client;
+      int backoffexp = 0;
+      int tries = 100;
+      OpTracker opTracker;
+
+      MyListener(CouchbaseClient c, CountDownLatch l, int b, Object v, String k, ScheduledExecutorService s, OpTracker ot) {
+        value = v;
+        key = k;
+        client = c;
+        latch = l;
+        backoffexp = b;
+        sch = s;
+        opTracker = ot;
+      }
+
+      public void onComplete(OperationFuture<?> future) throws Exception {
+        //Log completion of async request, then process result
+        opTracker.setOnCompleted(key);
+        doSetWithBackOff(future);
+      }//onComplete
+
+      public void doSetWithBackOff(OperationFuture<?> future) throws Exception {
+      try {
+        if (future.getStatus().isSuccess()) {
+          try {
+            // Successfully completed this operation, decrement the latch
+      	    latch.countDown();
+
+            //Log this op as completed
+            opTracker.setCompleted(key);
+          }
+          catch (Exception e) { 
+            System.out.println("couldnt countdown latch: " + e.getMessage());
+            throw e; 
+          }
+        }
+        else if (backoffexp > tries) {
+          // Reached our maximum number of back off attempts, give up
+          System.out.println("tried " + tries + " times, giving up setting key: " + key);
+          System.exit(1);
+        }
+        else {
+          // The operation failed, reschedule it for backoffMillis time later
+          //System.out.println("op failed! : " + future.getKey() + " : " + future.getStatus().getMessage());
+
+          try {
+            double backoffMillis = Math.pow(2, backoffexp);
+            backoffMillis = Math.min(1000, backoffMillis); // 1 sec max
+
+            backoffexp++;
+           
+            //System.out.println("backing off for: " + backoffexp + " on key: " + future.getKey()); 
+            if (sch == null) { System.out.println("no scheduler object!"); System.exit(1); }
+
+            ScheduledFuture scheduledFuture =
+              sch.schedule(new MyCallable(this, opTracker), (long)backoffMillis, TimeUnit.MILLISECONDS);
+          }
+          catch (Exception e) { 
+             System.out.println("borked during back off");
+             System.exit(1);
+             throw e; 
+          }
+         }
+       }
+       catch(Exception e) {
+         System.out.println("exception in onComplete");
+         System.exit(1);
+       }
+      }//doSetWithBackOff
+
+    } //MyListener Class
