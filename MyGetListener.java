@@ -1,11 +1,9 @@
-
 import com.couchbase.client.CouchbaseClient;
 import java.util.concurrent.CountDownLatch;
 import net.spy.memcached.internal.GetFuture;
 import net.spy.memcached.internal.GetCompletionListener;
 
 
-//ScheduledExecutor classes
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
@@ -40,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 
       public void doPostProcess(GetFuture<?> future) throws Exception {
             value = future.get();
-            //System.out.println("Value retrieved: " + value);
       }
 
       public void doGetWithBackOff(GetFuture<?> future) throws Exception {

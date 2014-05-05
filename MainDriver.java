@@ -31,7 +31,7 @@ public class MainDriver {
 
     // (Subset) of nodes in the cluster to establish a connection
     List<URI> hosts = Arrays.asList(
-      new URI("http://188.226.229.190:8091/pools")
+      new URI("http://169.254.54.66:8091/pools")
     );
  
     // Name of the Bucket to connect to
@@ -43,11 +43,11 @@ public class MainDriver {
     CouchbaseConnectionFactoryBuilder cfb = new CouchbaseConnectionFactoryBuilder();
 
     // Ovveride default values on CouchbaseConnectionFactoryBuilder
-    // For example - wait up to 10 seconds for an operation to succeed
-    cfb.setOpTimeout(1000);
+    // For example - wait up to 5 seconds for an operation to succeed
+    cfb.setOpTimeout(5000);
     cfb.setOpQueueMaxBlockTime(30000);
 
-    CouchbaseConnectionFactory cf = cfb.buildCouchbaseConnection(hosts, "default", "");
+    CouchbaseConnectionFactory cf = cfb.buildCouchbaseConnection(hosts, bucket, "");
 
     CouchbaseClient client = new CouchbaseClient(cf); 
 
@@ -66,7 +66,7 @@ public class MainDriver {
     System.out.println("Length of value string: " + value.getBytes("UTF-8").length);
 
     // Set the number of key/value pairs to create
-    int iterations = 10000000; 
+    int iterations = 1000000; 
 
     OpTracker opTracker = new OpTracker();
 
@@ -93,9 +93,9 @@ public class MainDriver {
           }
 	  }
 	  latch.await();
-          //We've finished that batch, so hint to system now is good time for gc before next batch
-          System.gc();
-      //System.out.println("final latch value: " + latch.getCount());
+
+      //We've finished that batch, so hint to system now is good time for gc before next batch
+      System.gc();
     }
 
     long phaseOneEndTime = System.currentTimeMillis();
@@ -110,7 +110,6 @@ public class MainDriver {
     long phaseTwoStartTime = System.currentTimeMillis();
     for (int s=0; s<10; s++)
     {
-        //doubling iterations to allow for get and set
 	  final CountDownLatch latch = new CountDownLatch(iterations/10);
 	  final CountDownLatch setLatch = new CountDownLatch(iterations/10);
 
@@ -136,9 +135,6 @@ public class MainDriver {
     long phaseTwoEndTime = System.currentTimeMillis();
 
     System.out.println("completed " + iterations + " *GET + SET*  operations in " + ((phaseTwoEndTime - phaseTwoStartTime)/1000) + " seconds" );
-
-
-    //System.out.println("Op tracker results: " );
     //opTracker.printTracker();
 
     // Shutting down properly

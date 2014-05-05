@@ -7,7 +7,6 @@ import net.spy.memcached.internal.GetCompletionListener;
 import net.spy.memcached.internal.OperationFuture;
 import net.spy.memcached.internal.OperationCompletionListener;
 
-//ScheduledExecutor classes
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
@@ -30,15 +29,15 @@ import java.util.concurrent.TimeUnit;
         }
         catch (Exception e) {
           System.out.println("exception: " + e.getMessage());
-          throw e;
+          System.exit(1);
         }
-        // System.out.println("Value retrieved in reversing func: " + value);
+
         try {
           value = new StringBuilder(value.toString()).reverse().toString();
         }
         catch (Exception e) {
           System.out.println("exception reversing string: " + e.getMessage());
-          throw e;
+          System.exit(1);
         }
 
         try {
@@ -49,14 +48,10 @@ import java.util.concurrent.TimeUnit;
         catch (Exception e) {
           System.out.println("exception: " + e.getMessage());
           System.exit(1);
-          throw e;
         }
       } 
 
       public Callable getCallableForRetry() {
         return new MyReversingCallable(this, opTracker);  
       }
-
-
-
     } //MyReversingListener

@@ -48,7 +48,7 @@ import java.util.concurrent.TimeUnit;
           }
           catch (Exception e) { 
             System.out.println("couldnt countdown latch: " + e.getMessage());
-            throw e; 
+            System.exit(1);
           }
         }
         else if (backoffexp > tries) {
@@ -57,16 +57,13 @@ import java.util.concurrent.TimeUnit;
           System.exit(1);
         }
         else {
-          // The operation failed, reschedule it for backoffMillis time later
-          //System.out.println("op failed! : " + future.getKey() + " : " + future.getStatus().getMessage());
-
           try {
+            // The operation failed, reschedule it for backoffMillis time later
             double backoffMillis = Math.pow(2, backoffexp);
             backoffMillis = Math.min(1000, backoffMillis); // 1 sec max
-
             backoffexp++;
            
-            //System.out.println("backing off for: " + backoffexp + " on key: " + future.getKey()); 
+            //System.out.println("backing off for: " + backoffMillis + " on key: " + future.getKey()); 
             if (sch == null) { System.out.println("no scheduler object!"); System.exit(1); }
 
             opTracker.setRescheduled(key);

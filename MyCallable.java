@@ -36,7 +36,7 @@ class MyCallable implements Callable {
       System.exit(1);
     }
 
-    return "no idea what this string is for";
+    return "";
   }
 }//MyCallable
 
