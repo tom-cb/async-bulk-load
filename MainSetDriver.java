@@ -18,12 +18,11 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-public class MainDriver {
+public class MainSetDriver {
 
   public static void main(String[] args) throws Exception {
 
     //Thread pool will be used to re-issue failed ops
-    //Also used to issue further work based on results of ops
     ScheduledExecutorService schExSvc = Executors.newScheduledThreadPool(8);
 
     // ******* Client Object Setup and Connection **********
@@ -56,9 +55,9 @@ public class MainDriver {
 
     // Create a string to use as our 'value' for storing
     // Loop adding multiples of that to give larger value for testing
-    // Creating 2500 char string here by default
+    // Creating 1000 char string (100x 10 characters) here by default
     String value = "";
-    for (int i = 0; i < 250; i++) {
+    for (int i = 0; i < 100; i++) {
       value += "0123456789";
     }
 
@@ -66,8 +65,9 @@ public class MainDriver {
     System.out.println("Length of value string: " + value.getBytes("UTF-8").length);
 
     // Set the number of key/value pairs to create
-    int iterations = 1000000; 
+    int iterations = 100000; 
 
+    // This is just a class to track operations to aid with debugging
     OpTracker opTracker = new OpTracker();
 
 
@@ -76,6 +76,10 @@ public class MainDriver {
 
     long phaseOneStartTime = System.currentTimeMillis();
 
+    // We want to limit the maximum number of operations we issue in one go
+    // This is just so we don't blow the size of our java heap up massively
+    // Do this by simply isuing a max 1/10th of ops at any one time.
+    // When the 1/10th is complete, the latch will fire and next 1/10th started
     for (int s=0; s<10; s++)
     {
 	  final CountDownLatch latch = new CountDownLatch(iterations/10);
@@ -101,40 +105,6 @@ public class MainDriver {
     long phaseOneEndTime = System.currentTimeMillis();
 
     System.out.println("completed " + iterations + " *SET* opeerations in " + ((phaseOneEndTime - phaseOneStartTime)/1000) + " seconds" );
-    //opTracker.printTracker();
-
-
-    // *** Retrieve each document, reverse it, and store back ***
-    // *****************************************************
-
-    long phaseTwoStartTime = System.currentTimeMillis();
-    for (int s=0; s<10; s++)
-    {
-	  final CountDownLatch latch = new CountDownLatch(iterations/10);
-	  final CountDownLatch setLatch = new CountDownLatch(iterations/10);
-
-	  for (int i = 0; i < (iterations/10); i++) {
-          String key = "key-" + s + "-" + i;
-          try {
-  	        GetFuture<java.lang.Object> future = client.asyncGet(key.toString());
-            opTracker.setScheduled(key);
-  	   	    future.addListener(new MyReversingListener(client,latch, 0, value, key, schExSvc, setLatch, opTracker));
-          }
-          catch (Exception e) {
-            System.out.println("exception: " + e.getMessage());
-            throw e;
-          }
-	  }
-      latch.await();
-      setLatch.await();
-
-      //We've finished that batch, so hint to system now is good time for gc before next batch
-      System.gc();
-    }
-
-    long phaseTwoEndTime = System.currentTimeMillis();
-
-    System.out.println("completed " + iterations + " *GET + SET*  operations in " + ((phaseTwoEndTime - phaseTwoStartTime)/1000) + " seconds" );
     //opTracker.printTracker();
 
     // Shutting down properly
