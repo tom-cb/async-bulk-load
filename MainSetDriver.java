@@ -23,7 +23,7 @@ public class MainSetDriver {
   public static void main(String[] args) throws Exception {
 
     //Thread pool will be used to re-issue failed ops
-    ScheduledExecutorService schExSvc = Executors.newScheduledThreadPool(8);
+    ScheduledExecutorService schExSvc = Executors.newScheduledThreadPool(4);
 
     // ******* Client Object Setup and Connection **********
     // *****************************************************
@@ -65,7 +65,7 @@ public class MainSetDriver {
     System.out.println("Length of value string: " + value.getBytes("UTF-8").length);
 
     // Set the number of key/value pairs to create
-    int iterations = 100000; 
+    int iterations = 1000000; 
 
     // This is just a class to track operations to aid with debugging
     OpTracker opTracker = new OpTracker();
@@ -96,6 +96,9 @@ public class MainSetDriver {
             throw e;
           }
 	  }
+
+      //Thread.sleep(10000);
+      //opTracker.printTracker();
 	  latch.await();
 
       //We've finished that batch, so hint to system now is good time for gc before next batch
@@ -105,7 +108,7 @@ public class MainSetDriver {
     long phaseOneEndTime = System.currentTimeMillis();
 
     System.out.println("completed " + iterations + " *SET* opeerations in " + ((phaseOneEndTime - phaseOneStartTime)/1000) + " seconds" );
-    //opTracker.printTracker();
+    opTracker.printTracker();
 
     // Shutting down properly
     client.shutdown();
